@@ -25,6 +25,8 @@
     "webpack-dev-server": "^3.1.4"
   },
   "dependencies": {
-    "lodash": "^4.17.10"
+    "highcharts": "^6.1.0",
+    "lodash": "^4.17.10",
+    "xml2js": "^0.4.19"
   }
 }
