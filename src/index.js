@@ -1,6 +1,8 @@
 import join from 'lodash/join';
+import map from 'lodash/map';
 import xml2js from 'xml2js';
 import Highcharts from 'highcharts';
+import moment from 'moment';
 
 var xhr = new XMLHttpRequest();
 
@@ -20,23 +22,24 @@ xhr.onload = function () {
 
     xml2js.parseString(xhr.response, function (err, result) {
       element = document.createElement('div');
-      console.log(result);
-      makeGraph(element);
+      const data = result.dwml.data[0];
+      console.log(data);
+      makeGraph(data);
     });
 };
     
 xhr.send();
 
-function makeGraph(element) {
+function makeGraph(data) {
   Highcharts.chart('container', {
     chart: {
-      type: 'bar'
+      type: 'area'
     },
     title: {
-      text: 'Fruit Consumption'
+      text: 'clouds and precip'
     },
     xAxis: {
-      categories: ['Apples', 'Bananas', 'Oranges']
+      categories: map(data["time-layout"][0]["start-valid-time"], function (e) { return moment(e).format("ddd, hA") })
     },
     yAxis: {
       title: {
@@ -44,11 +47,11 @@ function makeGraph(element) {
       }
     },
     series: [{
-      name: 'Jane',
-      data: [1, 0, 4]
+      name: 'cloud-amount',
+      data: map(data.parameters[0]["cloud-amount"][0].value, function (e) { return Number(e) })
     }, {
-      name: 'John',
-      data: [5, 7, 3]
+      name: 'probability-of-precipitation',
+      data: map(data.parameters[0]["probability-of-precipitation"][0].value, function (e) { return Number(e) })
     }]
   });
 }
