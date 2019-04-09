@@ -1,4 +1,3 @@
-import join from 'lodash/join';
 import map from 'lodash/map';
 import xml2js from 'xml2js';
 import Highcharts from 'highcharts';
@@ -39,12 +38,22 @@ function makeGraph(data) {
       text: 'clouds and precip'
     },
     xAxis: {
-      categories: map(data["time-layout"][0]["start-valid-time"], function (e) { return moment(e).format("ddd, hA") })
+      categories: map(data["time-layout"][0]["start-valid-time"], function (e) {return moment(e)}),
+      labels: {
+        formatter: function () {
+          return this.value.toDate().getHours() % 3 === 0 && this.value.format("ddd") + ' ' + this.value.format("M/D");
+        }
+      },
+      crosshair: {
+        width: 1,
+        color: 'green'
+      }
     },
     yAxis: {
       title: {
-        text: 'Fruit eaten'
-      }
+        text: undefined
+      },
+      max: 100
     },
     series: [{
       name: 'cloud-amount',
@@ -52,6 +61,13 @@ function makeGraph(data) {
     }, {
       name: 'probability-of-precipitation',
       data: map(data.parameters[0]["probability-of-precipitation"][0].value, function (e) { return Number(e) })
-    }]
+    }],
+    tooltip: {
+      split: true,
+      formatter: function () {
+        // The first returned item is the header, subsequent items are the points
+        return ['<b>' + this.x.format("hA") + '</b>'].concat(this.points.map(point =>  point.y))
+      }
+    }
   });
 }

@@ -9,7 +9,7 @@
     "start": "webpack-dev-server --open",
     "build": "webpack --mode production",
     "deploy": "gh-pages -d dist",
-    "publish-demo": "npm run build && npm run deploy"
+    "publish": "npm run build && npm run deploy"
   },
   "repository": {
     "type": "git",
