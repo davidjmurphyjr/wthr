@@ -1,53 +1,145 @@
-import map from 'lodash/map';
 import xml2js from 'xml2js';
 import Highcharts from 'highcharts';
-import moment from 'moment';
 
-var xhr = new XMLHttpRequest();
+const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const cloudsAndPrecipitationChartId = "clouds-and-precipitation-chart";
+const temperatureChartId = "temperature-chart";
 
-console.log('UNSENT', xhr.readyState); // readyState will be 0
 
-xhr.open("GET", "https://forecast.weather.gov/MapClick.php?lat=42.3944&lon=-71.1165&FcstType=digitalDWML", true);
-console.log('OPENED', xhr.readyState); // readyState will be 1
+function addDivToDom(id) {
+  const container = document.createElement('div');
+  container.setAttribute("id", id);
+  document.body.appendChild(container);
+}
 
-xhr.onprogress = function () {
-    console.log('LOADING', xhr.readyState); // readyState will be 3
-};
+function buildTemperatureChart(data) {
+  let dates = data["time-layout"][0]["start-valid-time"];
+  const startDateString = dates[0];
+  const start = new Date(startDateString);
+  Highcharts.setOptions({time: {useUTC: false}});
 
-xhr.onload = function () {
-    console.log('DONE', xhr.readyState); // readyState will be 4
-    var element = document.createElement('div');
-    document.body.appendChild(element);
+  const options = {
+    chart: {
+      type: 'line'
+    },
+    title: {
+      text: 'Temperature'
+    },
+    plotOptions: {
+      series: {
+        pointStart: start.getTime(),
+        pointInterval: 60 * 60 * 1000,
+        marker: {enabled: false}
+      }
+    },
+    xAxis: {
+      type: 'datetime',
+      labels: {enabled: false},
+      crosshair: {
+        width: 1,
+        color: 'green'
+      },
+      plotBands: dates.reduce((acc, d, i) => {
+        const date = new Date(d);
+        if (date.getHours() === 0 && dates.length - i > 24) {
+          const plotBand = { // Light air
+            from: date,
+            to: new Date(date.getTime()).setHours(23, 59, 59),
+            label: {text: days[date.getDay()],}
+          };
+          acc.push(plotBand)
+        }
+        return acc;
+      }, []),
+      plotLines: dates.reduce((acc, d) => {
+        const date = new Date(d);
+        if (date.getHours() === 0) {
+          const plotBand = {color: 'black', value: date, width: 1};
+          acc.push(plotBand)
+        }
+        return acc;
+      }, [])
 
-    xml2js.parseString(xhr.response, function (err, result) {
-      element = document.createElement('div');
-      const data = result.dwml.data[0];
-      console.log(data);
-      makeGraph(data);
-    });
-};
-    
-xhr.send();
+    },
+    yAxis: {
+      title: {
+        text: undefined
+      },
+    },
+    series: [
+      {
+        name: '"dew point"',
+        data: data.parameters[0]["temperature"][0].value.map(e => Number(e)),
+        color: '#d32431'
+      },
+      {
+        name: "wind chill",
+        data: data.parameters[0]["temperature"][1].value.map(e => Number(e)),
+        color: '#ab579f'
+      }, {
+        name: 'Temperature',
+        data: data.parameters[0]["temperature"][2].value.map(e => Number(e)),
+        color: '#5d9e4e'
+      }
+    ],
+    tooltip: {
+      split: true,
+      xDateFormat: "%A, %b %e, %I:%M%p"
+    },
+  };
 
-function makeGraph(data) {
-  Highcharts.chart('container', {
+  Highcharts.chart(temperatureChartId, options);
+}
+
+
+function buildCloudsAndPrecipitationChart(data) {
+  let dates = data["time-layout"][0]["start-valid-time"];
+  const startDateString = dates[0];
+  const start = new Date(startDateString);
+  Highcharts.setOptions({time: {useUTC: false}});
+
+  const options = {
     chart: {
       type: 'area'
     },
     title: {
-      text: 'clouds and precip'
+      text: 'Clouds and Precipitation'
+    },
+    plotOptions: {
+      series: {
+        pointStart: start.getTime(),
+        pointInterval: 60 * 60 * 1000,
+        marker: {enabled: false}
+      }
     },
     xAxis: {
-      categories: map(data["time-layout"][0]["start-valid-time"], function (e) {return moment(e)}),
-      labels: {
-        formatter: function () {
-          return this.value.toDate().getHours() % 3 === 0 && this.value.format("ddd") + ' ' + this.value.format("M/D");
-        }
-      },
+      type: 'datetime',
+      labels: {enabled: false},
       crosshair: {
         width: 1,
         color: 'green'
-      }
+      },
+      plotBands: dates.reduce((acc, d, i) => {
+        const date = new Date(d);
+        if (date.getHours() === 0 && dates.length - i > 24) {
+          const plotBand = { // Light air
+            from: date,
+            to: new Date(date.getTime()).setHours(23, 59, 59),
+            label: {text: days[date.getDay()],}
+          };
+          acc.push(plotBand)
+        }
+        return acc;
+      }, []),
+      plotLines: dates.reduce((acc, d) => {
+        const date = new Date(d);
+        if (date.getHours() === 0) {
+          const plotBand = {color: 'black', value: date, width: 1};
+          acc.push(plotBand)
+        }
+        return acc;
+      }, [])
+
     },
     yAxis: {
       title: {
@@ -56,18 +148,36 @@ function makeGraph(data) {
       max: 100
     },
     series: [{
-      name: 'cloud-amount',
-      data: map(data.parameters[0]["cloud-amount"][0].value, function (e) { return Number(e) })
+      name: 'Cloud Cover',
+      data: data.parameters[0]["cloud-amount"][0].value.map(e => Number(e)),
+      color: '#a3a3a3'
     }, {
-      name: 'probability-of-precipitation',
-      data: map(data.parameters[0]["probability-of-precipitation"][0].value, function (e) { return Number(e) })
+      name: 'Probability of Precipitation',
+      data: data.parameters[0]["probability-of-precipitation"][0].value.map(e => Number(e)),
+      color: '#25abda'
     }],
     tooltip: {
       split: true,
-      formatter: function () {
-        // The first returned item is the header, subsequent items are the points
-        return ['<b>' + this.x.format("hA") + '</b>'].concat(this.points.map(point =>  point.y))
-      }
-    }
-  });
+      xDateFormat: "%A, %b %e, %I:%M%p"
+    },
+  };
+
+  Highcharts.chart(cloudsAndPrecipitationChartId, options);
 }
+
+
+(async () => {
+  try {
+    const response = await fetch('https://forecast.weather.gov/MapClick.php?lat=42.3944&lon=-71.1165&FcstType=digitalDWML')
+    const text = await response.text();
+    const result = await xml2js.parseStringPromise(text);
+    const data = result.dwml.data[0];
+    console.log(data);
+    addDivToDom("temperature-chart");
+    buildTemperatureChart(data)
+    addDivToDom(cloudsAndPrecipitationChartId);
+    buildCloudsAndPrecipitationChart(data);
+  } catch (e) {
+    console.error(e)
+  }
+})();
