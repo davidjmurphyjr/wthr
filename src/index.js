@@ -2,8 +2,6 @@ import xml2js from 'xml2js';
 import Highcharts from 'highcharts';
 
 const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const cloudsAndPrecipitationChartId = "clouds-and-precipitation-chart";
-const temperatureChartId = "temperature-chart";
 
 
 function addDivToDom(id) {
@@ -12,10 +10,44 @@ function addDivToDom(id) {
   document.body.appendChild(container);
 }
 
-function buildTemperatureChart(data) {
+function getDates(data) {
   let dates = data["time-layout"][0]["start-valid-time"];
   const startDateString = dates[0];
   const start = new Date(startDateString);
+  return {dates, start};
+}
+
+function getXAxis(dates) {
+  return {
+    type: 'datetime',
+    labels: {enabled: false},
+    crosshair: {width: 1, color: 'green'},
+    plotBands: dates.reduce((acc, d, i) => {
+      const date = new Date(d);
+      if (date.getHours() === 0 && dates.length - i > 24) {
+        const plotBand = { // Light air
+          from: date,
+          to: new Date(date.getTime()).setHours(23, 59, 59),
+          label: {text: days[date.getDay()],}
+        };
+        acc.push(plotBand)
+      }
+      return acc;
+    }, []),
+    plotLines: dates.reduce((acc, d) => {
+      const date = new Date(d);
+      if (date.getHours() === 0) {
+        const plotBand = {color: 'black', value: date, width: 1};
+        acc.push(plotBand)
+      }
+      return acc;
+    }, [])
+
+  };
+}
+
+function buildTemperatureChart(data) {
+  const {dates, start} = getDates(data);
   Highcharts.setOptions({time: {useUTC: false}});
 
   const options = {
@@ -25,55 +57,19 @@ function buildTemperatureChart(data) {
     title: {
       text: 'Temperature'
     },
-    plotOptions: {
-      series: {
-        pointStart: start.getTime(),
-        pointInterval: 60 * 60 * 1000,
-        marker: {enabled: false}
-      }
-    },
-    xAxis: {
-      type: 'datetime',
-      labels: {enabled: false},
-      crosshair: {
-        width: 1,
-        color: 'green'
-      },
-      plotBands: dates.reduce((acc, d, i) => {
-        const date = new Date(d);
-        if (date.getHours() === 0 && dates.length - i > 24) {
-          const plotBand = { // Light air
-            from: date,
-            to: new Date(date.getTime()).setHours(23, 59, 59),
-            label: {text: days[date.getDay()],}
-          };
-          acc.push(plotBand)
-        }
-        return acc;
-      }, []),
-      plotLines: dates.reduce((acc, d) => {
-        const date = new Date(d);
-        if (date.getHours() === 0) {
-          const plotBand = {color: 'black', value: date, width: 1};
-          acc.push(plotBand)
-        }
-        return acc;
-      }, [])
-
-    },
+    plotOptions: getPlotOptions(start),
+    xAxis: getXAxis(dates),
     yAxis: {
-      title: {
-        text: undefined
-      },
+      title: { text: undefined },
     },
     series: [
       {
-        name: '"dew point"',
+        name: 'Dew Point',
         data: data.parameters[0]["temperature"][0].value.map(e => Number(e)),
         color: '#d32431'
       },
       {
-        name: "wind chill",
+        name: "Wind Chill",
         data: data.parameters[0]["temperature"][1].value.map(e => Number(e)),
         color: '#ab579f'
       }, {
@@ -88,14 +84,24 @@ function buildTemperatureChart(data) {
     },
   };
 
+  const temperatureChartId = "temperature-chart";
+  addDivToDom(temperatureChartId);
   Highcharts.chart(temperatureChartId, options);
 }
 
 
+function getPlotOptions(start) {
+  return {
+    series: {
+      pointStart: start.getTime(),
+      pointInterval: 60 * 60 * 1000,
+      marker: {enabled: false}
+    }
+  };
+}
+
 function buildCloudsAndPrecipitationChart(data) {
-  let dates = data["time-layout"][0]["start-valid-time"];
-  const startDateString = dates[0];
-  const start = new Date(startDateString);
+  const {dates, start} = getDates(data);
   Highcharts.setOptions({time: {useUTC: false}});
 
   const options = {
@@ -105,46 +111,10 @@ function buildCloudsAndPrecipitationChart(data) {
     title: {
       text: 'Clouds and Precipitation'
     },
-    plotOptions: {
-      series: {
-        pointStart: start.getTime(),
-        pointInterval: 60 * 60 * 1000,
-        marker: {enabled: false}
-      }
-    },
-    xAxis: {
-      type: 'datetime',
-      labels: {enabled: false},
-      crosshair: {
-        width: 1,
-        color: 'green'
-      },
-      plotBands: dates.reduce((acc, d, i) => {
-        const date = new Date(d);
-        if (date.getHours() === 0 && dates.length - i > 24) {
-          const plotBand = { // Light air
-            from: date,
-            to: new Date(date.getTime()).setHours(23, 59, 59),
-            label: {text: days[date.getDay()],}
-          };
-          acc.push(plotBand)
-        }
-        return acc;
-      }, []),
-      plotLines: dates.reduce((acc, d) => {
-        const date = new Date(d);
-        if (date.getHours() === 0) {
-          const plotBand = {color: 'black', value: date, width: 1};
-          acc.push(plotBand)
-        }
-        return acc;
-      }, [])
-
-    },
+    plotOptions: getPlotOptions(start),
+    xAxis: getXAxis(dates),
     yAxis: {
-      title: {
-        text: undefined
-      },
+      title: { text: undefined },
       max: 100
     },
     series: [{
@@ -161,10 +131,45 @@ function buildCloudsAndPrecipitationChart(data) {
       xDateFormat: "%A, %b %e, %I:%M%p"
     },
   };
-
+  const cloudsAndPrecipitationChartId = "clouds-and-precipitation-chart";
+  addDivToDom(cloudsAndPrecipitationChartId);
   Highcharts.chart(cloudsAndPrecipitationChartId, options);
 }
 
+function buildWindChart(data) {
+  const {dates, start} = getDates(data);
+  Highcharts.setOptions({time: {useUTC: false}});
+
+  const options = {
+    chart: {
+      type: 'line'
+    },
+    title: {
+      text: 'Wind'
+    },
+    plotOptions: getPlotOptions(start),
+    xAxis: getXAxis(dates),
+    yAxis: {
+      title: { text: undefined },
+    },
+    series: [{
+      name: 'Sustained',
+      data: data.parameters[0]["wind-speed"][0].value.map(e => Number(e)),
+      color: '#981497'
+    }, {
+      name: 'Gusts',
+      data: data.parameters[0]["wind-speed"][1].value.map(e => Number(e)),
+      color: '#010757'
+    }],
+    tooltip: {
+      split: true,
+      xDateFormat: "%A, %b %e, %I:%M%p"
+    },
+  };
+  const windChartId = "wind-chart";
+  addDivToDom(windChartId);
+  Highcharts.chart(windChartId, options);
+}
 
 (async () => {
   try {
@@ -173,10 +178,10 @@ function buildCloudsAndPrecipitationChart(data) {
     const result = await xml2js.parseStringPromise(text);
     const data = result.dwml.data[0];
     console.log(data);
-    addDivToDom("temperature-chart");
-    buildTemperatureChart(data)
-    addDivToDom(cloudsAndPrecipitationChartId);
+
+    buildTemperatureChart(data);
     buildCloudsAndPrecipitationChart(data);
+    buildWindChart(data);
   } catch (e) {
     console.error(e)
   }
