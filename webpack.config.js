@@ -9,5 +9,12 @@ module.exports = {
     path: path.resolve(__dirname, 'docs')
   },
   devtool: 'inline-source-map',
-  plugins: [new HtmlWebpackPlugin()]
+  plugins: [new HtmlWebpackPlugin({
+    template: "./src/index.html",
+  })],
+  module: {
+    rules: [
+      { test: /\.js$/, exclude: /node_modules/, loader: "babel-loader" }
+    ]
+  }
 };

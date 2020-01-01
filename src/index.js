@@ -1,14 +1,10 @@
 import xml2js from 'xml2js';
 import Highcharts from 'highcharts';
+import ReactDOM from 'react-dom'
+import Hello from "./Hello";
+import React from "react";
 
 const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-
-function addDivToDom(id) {
-  const container = document.createElement('div');
-  container.setAttribute("id", id);
-  document.body.appendChild(container);
-}
 
 function getDates(data) {
   let dates = data["time-layout"][0]["start-valid-time"];
@@ -84,9 +80,7 @@ function buildTemperatureChart(data) {
     },
   };
 
-  const temperatureChartId = "temperature-chart";
-  addDivToDom(temperatureChartId);
-  Highcharts.chart(temperatureChartId, options);
+  Highcharts.chart("temperature-chart", options);
 }
 
 
@@ -131,9 +125,7 @@ function buildCloudsAndPrecipitationChart(data) {
       xDateFormat: "%A, %b %e, %I:%M%p"
     },
   };
-  const cloudsAndPrecipitationChartId = "clouds-and-precipitation-chart";
-  addDivToDom(cloudsAndPrecipitationChartId);
-  Highcharts.chart(cloudsAndPrecipitationChartId, options);
+  Highcharts.chart("clouds-and-precipitation-chart", options);
 }
 
 function buildWindChart(data) {
@@ -166,14 +158,12 @@ function buildWindChart(data) {
       xDateFormat: "%A, %b %e, %I:%M%p"
     },
   };
-  const windChartId = "wind-chart";
-  addDivToDom(windChartId);
-  Highcharts.chart(windChartId, options);
+  Highcharts.chart("wind-chart", options);
 }
 
 (async () => {
   try {
-    const response = await fetch('https://forecast.weather.gov/MapClick.php?lat=42.3944&lon=-71.1165&FcstType=digitalDWML')
+    const response = await fetch('https://forecast.weather.gov/MapClick.php?lat=42.3944&lon=-71.1165&FcstType=digitalDWML');
     const text = await response.text();
     const result = await xml2js.parseStringPromise(text);
     const data = result.dwml.data[0];
@@ -182,6 +172,8 @@ function buildWindChart(data) {
     buildTemperatureChart(data);
     buildCloudsAndPrecipitationChart(data);
     buildWindChart(data);
+    ReactDOM.render(<Hello />, document.getElementById('react-root')
+  );
   } catch (e) {
     console.error(e)
   }
