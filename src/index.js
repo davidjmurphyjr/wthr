@@ -164,11 +164,41 @@ function buildWindChart(data) {
 
 (async () => {
   try {
+
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const lat = urlParams.get('lat');
+    const lon = urlParams.get('lon');
+    let data;
+    if (lat && lon) {
+      const url = `https://forecast.weather.gov/MapClick.php?lat=${lat}4&lon=${lon}&FcstType=digitalDWML`;
+      const response = await fetch(url);
+      const text = await response.text();
+      const result = await xml2js.parseStringPromise(text);
+      data = result.dwml.data[0];
+      console.log(data);
+
+      buildTemperatureChart(data);
+      buildCloudsAndPrecipitationChart(data);
+      buildWindChart(data);
+    }
+
     let locationQuery = '';
     let locations = [];
     const rootDomElement = document.getElementById('react-root');
 
-    const render = () => ReactDOM.render(<Hello locationQuery={locationQuery} locations={locations} updateLocationQuery={updateLocationQuery}/>, rootDomElement);
+    const render = () => {
+      const city = data?.location[0]?.city?.[0]?._;
+      const areaDescription = data?.location[0]?.['area-description']?.[0];
+      const locationDescription = city || areaDescription;
+      const rootReactComponent = <Hello
+        locationQuery={locationQuery}
+        locations={locations}
+        updateLocationQuery={updateLocationQuery}
+        locationDescription={locationDescription}
+      />;
+      return ReactDOM.render(rootReactComponent, rootDomElement);
+    };
 
     const geocode = debounce(async query => {
       const url = `https://nominatim.openstreetmap.org/search/${query}?format=json`;
@@ -182,23 +212,6 @@ function buildWindChart(data) {
       geocode(value);
       render()
     };
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const lat = urlParams.get('lat');
-    const lon = urlParams.get('lon');
-    if(lat && lon) {
-      const url = `https://forecast.weather.gov/MapClick.php?lat=${lat}4&lon=${lon}&FcstType=digitalDWML`;
-      const response = await fetch(url);
-      const text = await response.text();
-      const result = await xml2js.parseStringPromise(text);
-      const data = result.dwml.data[0];
-      console.log(data);
-
-      buildTemperatureChart(data);
-      buildCloudsAndPrecipitationChart(data);
-      buildWindChart(data);
-    }
-
     render()
   } catch (e) {
     console.error(e)
