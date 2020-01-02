@@ -3,6 +3,7 @@ import Highcharts from 'highcharts';
 import ReactDOM from 'react-dom'
 import Hello from "./Hello";
 import React from "react";
+import debounce from 'lodash.debounce';
 
 const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -56,7 +57,7 @@ function buildTemperatureChart(data) {
     plotOptions: getPlotOptions(start),
     xAxis: getXAxis(dates),
     yAxis: {
-      title: { text: undefined },
+      title: {text: undefined},
     },
     series: [
       {
@@ -108,7 +109,7 @@ function buildCloudsAndPrecipitationChart(data) {
     plotOptions: getPlotOptions(start),
     xAxis: getXAxis(dates),
     yAxis: {
-      title: { text: undefined },
+      title: {text: undefined},
       max: 100
     },
     series: [{
@@ -142,7 +143,7 @@ function buildWindChart(data) {
     plotOptions: getPlotOptions(start),
     xAxis: getXAxis(dates),
     yAxis: {
-      title: { text: undefined },
+      title: {text: undefined},
     },
     series: [{
       name: 'Sustained',
@@ -163,17 +164,42 @@ function buildWindChart(data) {
 
 (async () => {
   try {
-    const response = await fetch('https://forecast.weather.gov/MapClick.php?lat=42.3944&lon=-71.1165&FcstType=digitalDWML');
-    const text = await response.text();
-    const result = await xml2js.parseStringPromise(text);
-    const data = result.dwml.data[0];
-    console.log(data);
+    let locationQuery = '';
+    let locations = [];
+    const rootDomElement = document.getElementById('react-root');
 
-    buildTemperatureChart(data);
-    buildCloudsAndPrecipitationChart(data);
-    buildWindChart(data);
-    ReactDOM.render(<Hello />, document.getElementById('react-root')
-  );
+    const render = () => ReactDOM.render(<Hello locationQuery={locationQuery} locations={locations} updateLocationQuery={updateLocationQuery}/>, rootDomElement);
+
+    const geocode = debounce(async query => {
+      const url = `https://nominatim.openstreetmap.org/search/${query}?format=json`;
+      const response = await fetch(url);
+      locations = await response.json();
+      render()
+    }, 250);
+
+    const updateLocationQuery = async (value) => {
+      locationQuery = value;
+      geocode(value);
+      render()
+    };
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const lat = urlParams.get('lat');
+    const lon = urlParams.get('lon');
+    if(lat && lon) {
+      const url = `https://forecast.weather.gov/MapClick.php?lat=${lat}4&lon=${lon}&FcstType=digitalDWML`;
+      const response = await fetch(url);
+      const text = await response.text();
+      const result = await xml2js.parseStringPromise(text);
+      const data = result.dwml.data[0];
+      console.log(data);
+
+      buildTemperatureChart(data);
+      buildCloudsAndPrecipitationChart(data);
+      buildWindChart(data);
+    }
+
+    render()
   } catch (e) {
     console.error(e)
   }
