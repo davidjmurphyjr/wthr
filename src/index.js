@@ -209,7 +209,7 @@ function buildWindChart(data) {
 
     const updateLocationQuery = async (value) => {
       locationQuery = value;
-      geocode(value);
+      await geocode(value);
       render()
     };
     render()
