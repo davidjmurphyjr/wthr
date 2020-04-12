@@ -4,8 +4,11 @@ import ReactDOM from 'react-dom'
 import Hello from "./Hello";
 import React from "react";
 import debounce from 'lodash.debounce';
+import './style.css'
 
 const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const height = null
+
 
 function getDates(data) {
   let dates = data["time-layout"][0]["start-valid-time"];
@@ -49,6 +52,7 @@ function buildTemperatureChart(data) {
 
   const options = {
     chart: {
+      height: height,
       type: 'line'
     },
     title: {
@@ -101,6 +105,7 @@ function buildCloudsAndPrecipitationChart(data) {
 
   const options = {
     chart: {
+      height: height,
       type: 'area'
     },
     title: {
@@ -135,6 +140,7 @@ function buildWindChart(data) {
 
   const options = {
     chart: {
+      height: height,
       type: 'line'
     },
     title: {
@@ -164,25 +170,6 @@ function buildWindChart(data) {
 
 (async () => {
   try {
-
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const lat = urlParams.get('lat');
-    const lon = urlParams.get('lon');
-    let data;
-    if (lat && lon) {
-      const url = `https://forecast.weather.gov/MapClick.php?lat=${lat}4&lon=${lon}&FcstType=digitalDWML`;
-      const response = await fetch(url);
-      const text = await response.text();
-      const result = await xml2js.parseStringPromise(text);
-      data = result.dwml.data[0];
-      console.log(data);
-
-      buildTemperatureChart(data);
-      buildCloudsAndPrecipitationChart(data);
-      buildWindChart(data);
-    }
-
     let locationQuery = '';
     let locations = [];
     const rootDomElement = document.getElementById('react-root');
@@ -212,6 +199,23 @@ function buildWindChart(data) {
       await geocode(value);
       render()
     };
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const lat = urlParams.get('lat');
+    const lon = urlParams.get('lon');
+    let data;
+    if (lat && lon) {
+      const url = `https://forecast.weather.gov/MapClick.php?lat=${lat}4&lon=${lon}&FcstType=digitalDWML`;
+      const response = await fetch(url);
+      const text = await response.text();
+      const result = await xml2js.parseStringPromise(text);
+      data = result.dwml.data[0];
+      console.log(data);
+
+      buildWindChart(data);
+      buildTemperatureChart(data);
+      buildCloudsAndPrecipitationChart(data);
+    }
     render()
   } catch (e) {
     console.error(e)

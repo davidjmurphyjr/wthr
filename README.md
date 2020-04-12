@@ -1,3 +1,3 @@
-to deploy
+To deploy:
 
-`npm run build` to build docs folder on master, vheckin and push, GH pages will take it form there
+`npm run build` to build `/docs` folder on master, commit and push, GH pages will take it form there
