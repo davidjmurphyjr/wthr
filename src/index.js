@@ -55,9 +55,8 @@ function buildTemperatureChart(data) {
       height: height,
       type: 'line'
     },
-    title: {
-      text: 'Temperature'
-    },
+    title: { text: null },
+    legend:{ enabled:false },
     plotOptions: getPlotOptions(start),
     xAxis: getXAxis(dates),
     yAxis: {
@@ -108,9 +107,8 @@ function buildCloudsAndPrecipitationChart(data) {
       height: height,
       type: 'area'
     },
-    title: {
-      text: 'Clouds and Precipitation'
-    },
+    title: { text: null },
+    legend:{ enabled:false },
     plotOptions: getPlotOptions(start),
     xAxis: getXAxis(dates),
     yAxis: {
@@ -143,9 +141,8 @@ function buildWindChart(data) {
       height: height,
       type: 'line'
     },
-    title: {
-      text: 'Wind'
-    },
+    title: { text: null },
+    legend:{ enabled:false },
     plotOptions: getPlotOptions(start),
     xAxis: getXAxis(dates),
     yAxis: {
@@ -207,8 +204,8 @@ function buildWindChart(data) {
 
     const updateLocationQuery = async (value) => {
       locationQuery = value;
-      await geocode(value);
       render()
+      await geocode(value);
     };
     render()
 
