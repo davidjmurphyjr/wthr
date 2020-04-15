@@ -9,6 +9,47 @@ import './style.css'
 const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const height = null
 
+const foo = ['mousemove', 'touchmove', 'touchstart'].forEach(function (eventType) {
+  document.getElementById('charts').addEventListener(
+    eventType,
+    function (e) {
+      var chart,
+        point,
+        i,
+        event;
+
+      for (i = 0; i < Highcharts.charts.length; i = i + 1) {
+        chart = Highcharts.charts[i];
+        // Find coordinates within the chart
+        event = chart.pointer.normalize(e);
+        // Get the hovered point
+        point = chart.series[0].searchPoint(event, true);
+
+        if (point) {
+          point.highlight(e);
+        }
+      }
+    }
+  );
+});
+
+/**
+ * Override the reset function, we don't need to hide the tooltips and
+ * crosshairs.
+ */
+Highcharts.Pointer.prototype.reset = function () {
+  return undefined;
+};
+
+/**
+ * Highlight a point by showing tooltip, setting hover state and draw crosshair
+ */
+Highcharts.Point.prototype.highlight = function (event) {
+  event = this.series.chart.pointer.normalize(event);
+  this.onMouseOver(); // Show the hover marker
+  //this.series.chart.tooltip.refresh(this); // Show the tooltip
+  this.series.chart.xAxis[0].drawCrosshair(event, this); // Show the crosshair
+};
 
 function getDates(data) {
   let dates = data["time-layout"][0]["start-valid-time"];
@@ -61,6 +102,7 @@ function buildTemperatureChart(data) {
     xAxis: getXAxis(dates),
     yAxis: {
       title: {text: undefined},
+      max: 100
     },
     series: [
       {
@@ -91,6 +133,7 @@ function buildTemperatureChart(data) {
 function getPlotOptions(start) {
   return {
     series: {
+      animation: false,
       pointStart: start.getTime(),
       pointInterval: 60 * 60 * 1000,
       marker: {enabled: false}
@@ -147,6 +190,7 @@ function buildWindChart(data) {
     xAxis: getXAxis(dates),
     yAxis: {
       title: {text: undefined},
+      max: 100
     },
     series: [{
       name: 'Sustained',
